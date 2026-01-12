@@ -567,6 +567,76 @@ console.log('Hello World!');
             }
         }
 
+        // Find optimal break points to avoid splitting elements across images
+        function findOptimalBreakPoints(container, targetHeight, totalHeight) {
+            const breakPoints = [0]; // Always start at 0
+            
+            // Get all block-level children that can serve as break points
+            const children = Array.from(container.children);
+            
+            if (children.length === 0) {
+                // Fallback to fixed intervals if no children
+                const numImages = Math.ceil(totalHeight / targetHeight);
+                for (let i = 1; i < numImages; i++) {
+                    breakPoints.push(i * targetHeight);
+                }
+                return breakPoints;
+            }
+            
+            let currentOffset = 0;
+            
+            while (currentOffset < totalHeight - targetHeight) {
+                const nextTargetOffset = currentOffset + targetHeight;
+                let bestBreakPoint = null;
+                let minOverhang = Infinity; // Prefer breaks with minimal content overhang
+                
+                // Find the best place to break that avoids splitting elements
+                for (const child of children) {
+                    const childTop = child.offsetTop;
+                    const childBottom = childTop + child.offsetHeight;
+                    
+                    // Skip elements that are completely before current position
+                    if (childBottom <= currentOffset) {
+                        continue;
+                    }
+                    
+                    // Option 1: Break right after this element ends (if it ends near our target)
+                    if (childBottom > currentOffset && childBottom <= nextTargetOffset + targetHeight * 0.2) {
+                        const overhang = Math.max(0, childBottom - nextTargetOffset);
+                        if (overhang < minOverhang || bestBreakPoint === null) {
+                            minOverhang = overhang;
+                            bestBreakPoint = childBottom;
+                        }
+                    }
+                    
+                    // Option 2: Break right before this element starts (if it would be cut)
+                    if (childTop > currentOffset && childTop < nextTargetOffset && childBottom > nextTargetOffset) {
+                        // This element would be cut by our target - consider breaking before it
+                        const underhang = nextTargetOffset - childTop;
+                        // Prefer this if the element would lose less than 20% and we'd avoid splitting
+                        if (underhang < targetHeight * 0.2 && childTop > currentOffset) {
+                            if (underhang < minOverhang || bestBreakPoint === null) {
+                                minOverhang = underhang;
+                                bestBreakPoint = childTop;
+                            }
+                        }
+                    }
+                }
+                
+                // Use the best break point we found, or fall back to fixed offset
+                if (bestBreakPoint !== null && bestBreakPoint > currentOffset) {
+                    breakPoints.push(bestBreakPoint);
+                    currentOffset = bestBreakPoint;
+                } else {
+                    // No good break point found, use fixed offset
+                    currentOffset = nextTargetOffset;
+                    breakPoints.push(currentOffset);
+                }
+            }
+            
+            return breakPoints;
+        }
+
         // Generate canvas from off-screen preview
         async function generateCanvas() {
             copyBtn.disabled = true;
@@ -647,9 +717,12 @@ console.log('Hello World!');
                         
                         await new Promise(resolve => setTimeout(resolve, LAYOUT_SETTLE_DELAY_MS));
                         
+                        // Find optimal break points to avoid splitting elements
+                        const breakPoints = findOptimalBreakPoints(offscreenPreview, contentHeight, naturalHeight);
+                        
                         // Capture each section
-                        for (let i = 0; i < numImages; i++) {
-                            const offsetY = i * contentHeight;
+                        for (let i = 0; i < breakPoints.length; i++) {
+                            const offsetY = breakPoints[i];
                             offscreenPreview.style.transform = `translateY(-${offsetY}px)`;
                             
                             await new Promise(resolve => setTimeout(resolve, LAYOUT_SETTLE_DELAY_MS));
@@ -667,8 +740,8 @@ console.log('Hello World!');
                             renderedDataUris.push(canvas.toDataURL('image/png'));
                             
                             // Update button text to show progress periodically
-                            if (i % PROGRESS_UPDATE_FREQUENCY === 1 || i === numImages - 1) {
-                                copyBtn.textContent = `🔄 画像を生成中... (${i + 1}/${numImages})`;
+                            if (i % PROGRESS_UPDATE_FREQUENCY === 1 || i === breakPoints.length - 1) {
+                                copyBtn.textContent = `🔄 画像を生成中... (${i + 1}/${breakPoints.length})`;
                             }
                         }
                         
