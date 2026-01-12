@@ -510,10 +510,10 @@ console.log('Hello World!');
 
         // Generate canvas from preview
         async function generateCanvas() {
+            copyBtn.disabled = true;
+            copyBtn.textContent = '🔄 画像を生成中...';
+            
             try {
-                copyBtn.disabled = true;
-                copyBtn.textContent = '🔄 画像を生成中...';
-                
                 const viewportDims = getViewportDimensions();
                 const previewContainer = previewDiv.parentElement;
                 
@@ -572,7 +572,8 @@ console.log('Hello World!');
                         // Content fits, add padding to center if smaller
                         const paddingTop = Math.max(0, (viewportDims.height - naturalHeight) / 2);
                         const paddingLeft = Math.max(0, (viewportDims.width - naturalWidth) / 2);
-                        previewDiv.style.padding = `${paddingTop}px ${paddingLeft}px`;
+                        // Use 4-value syntax for explicit centering: top right bottom left
+                        previewDiv.style.padding = `${paddingTop}px ${paddingLeft}px ${paddingTop}px ${paddingLeft}px`;
                         previewDiv.style.width = viewportDims.width + 'px';
                         previewDiv.style.height = viewportDims.height + 'px';
                         previewDiv.style.overflow = 'hidden';
@@ -635,13 +636,13 @@ console.log('Hello World!');
                 previewContainer.style.justifyContent = originalContainerStyle.justifyContent;
                 
                 renderedCanvas = canvas;
-                copyBtn.disabled = false;
-                copyBtn.textContent = '📋 画像をコピー';
             } catch (error) {
                 console.error('Canvas generation error:', error);
+                showStatus('❌ 画像生成エラー: ' + error.message, false);
+            } finally {
+                // Always restore button state, regardless of success or failure
                 copyBtn.disabled = false;
                 copyBtn.textContent = '📋 画像をコピー';
-                showStatus('❌ 画像生成エラー: ' + error.message, false);
             }
         }
 
