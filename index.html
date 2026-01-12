@@ -127,6 +127,7 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
             color: #333;
+            /* Ensure padding is included in width/height calculations for viewport optimization */
             box-sizing: border-box;
         }
 
@@ -412,6 +413,12 @@ console.log('Hello World!');
 
         let renderedCanvas = null;
         let hasRenderedContent = false;
+        
+        // Layout timing constants for viewport optimization
+        // These delays ensure the browser has time to calculate and apply layout changes
+        // before capturing the canvas
+        const LAYOUT_MEASURE_DELAY_MS = 50;  // Time to wait for natural size measurement
+        const LAYOUT_SETTLE_DELAY_MS = 100;  // Time to wait for layout to settle after style changes
 
         // Get selected viewport dimensions
         function getViewportDimensions() {
@@ -535,7 +542,7 @@ console.log('Hello World!');
                     previewDiv.style.width = '';
                     previewDiv.style.height = '';
                     previewDiv.style.overflow = '';
-                    await new Promise(resolve => setTimeout(resolve, 50));
+                    await new Promise(resolve => setTimeout(resolve, LAYOUT_MEASURE_DELAY_MS));
                     
                     const naturalWidth = previewDiv.scrollWidth;
                     const naturalHeight = previewDiv.scrollHeight;
@@ -572,7 +579,7 @@ console.log('Hello World!');
                     }
                     
                     // Wait for layout to settle
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    await new Promise(resolve => setTimeout(resolve, LAYOUT_SETTLE_DELAY_MS));
                     
                     // Create canvas with viewport dimensions
                     canvas = await html2canvas(previewContainer, {
@@ -601,7 +608,7 @@ console.log('Hello World!');
                     previewContainer.style.justifyContent = '';
                     
                     // Wait for layout to settle
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    await new Promise(resolve => setTimeout(resolve, LAYOUT_SETTLE_DELAY_MS));
                     
                     canvas = await html2canvas(previewDiv, {
                         backgroundColor: '#ffffff',
@@ -632,9 +639,9 @@ console.log('Hello World!');
                 copyBtn.textContent = '📋 画像をコピー';
             } catch (error) {
                 console.error('Canvas generation error:', error);
-                showStatus('❌ 画像生成エラー: ' + error.message, false);
                 copyBtn.disabled = false;
                 copyBtn.textContent = '📋 画像をコピー';
+                showStatus('❌ 画像生成エラー: ' + error.message, false);
             }
         }
 
