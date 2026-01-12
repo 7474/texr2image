@@ -573,8 +573,12 @@ console.log('Hello World!');
                     overflow: offscreenContainer.style.overflow,
                     display: offscreenContainer.style.display,
                     alignItems: offscreenContainer.style.alignItems,
-                    justifyContent: offscreenContainer.style.justifyContent
+                    justifyContent: offscreenContainer.style.justifyContent,
+                    opacity: offscreenContainer.style.opacity
                 };
+                
+                // Make container visible for html2canvas to capture properly
+                offscreenContainer.style.opacity = '1';
                 
                 let canvas;
                 if (viewportDims) {
@@ -662,6 +666,7 @@ console.log('Hello World!');
                 offscreenContainer.style.display = originalContainerStyle.display;
                 offscreenContainer.style.alignItems = originalContainerStyle.alignItems;
                 offscreenContainer.style.justifyContent = originalContainerStyle.justifyContent;
+                offscreenContainer.style.opacity = originalContainerStyle.opacity;
                 
                 // Convert canvas to data URI
                 renderedDataUri = canvas.toDataURL('image/png');
