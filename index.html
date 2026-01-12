@@ -410,6 +410,7 @@ console.log('Hello World!');
         const viewportInfo = document.getElementById('viewport-info');
 
         let renderedCanvas = null;
+        let hasRenderedContent = false;
 
         // Get selected viewport dimensions
         function getViewportDimensions() {
@@ -419,7 +420,20 @@ console.log('Hello World!');
                 return null; // Use actual content size
             }
             
+            // Validate format before parsing
+            if (!selectedSize.includes('x')) {
+                console.error('Invalid viewport size format:', selectedSize);
+                return null;
+            }
+            
             const [width, height] = selectedSize.split('x').map(Number);
+            
+            // Validate parsed numbers
+            if (isNaN(width) || isNaN(height) || width <= 0 || height <= 0) {
+                console.error('Invalid viewport dimensions:', width, height);
+                return null;
+            }
+            
             return { width, height };
         }
 
@@ -439,6 +453,7 @@ console.log('Hello World!');
             if (!text) {
                 previewDiv.innerHTML = '<p style="color: #999;">入力がありません</p>';
                 copyBtn.disabled = true;
+                hasRenderedContent = false;
                 return;
             }
 
@@ -446,6 +461,7 @@ console.log('Hello World!');
                 // Parse markdown to HTML
                 const html = marked.parse(text);
                 previewDiv.innerHTML = html;
+                hasRenderedContent = true;
                 
                 // Generate canvas
                 generateCanvas();
@@ -454,6 +470,7 @@ console.log('Hello World!');
             } catch (error) {
                 console.error('Rendering error:', error);
                 showStatus('❌ レンダリングエラー: ' + error.message, false);
+                hasRenderedContent = false;
             }
         }
 
@@ -563,11 +580,11 @@ console.log('Hello World!');
             if (selectedSize === 'auto') {
                 viewportInfo.textContent = 'コンテンツのサイズに合わせて画像が生成されます';
             } else {
-                viewportInfo.textContent = `${selectedSize}px のサイズで画像が生成されます (Twitter/X 最適化)`;
+                viewportInfo.textContent = `${selectedSize} のサイズで画像が生成されます (Twitter/X 最適化)`;
             }
             
             // Re-generate canvas if already rendered
-            if (renderedCanvas && previewDiv.innerHTML !== '<p>左側のテキストエリアにMarkdownを入力して、「レンダリング」ボタンをクリックしてください。</p>') {
+            if (renderedCanvas && hasRenderedContent) {
                 generateCanvas();
             }
         });
