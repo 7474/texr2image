@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to Image - Markdown Renderer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel h2 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        #input-text {
+            width: 100%;
+            min-height: 400px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        #input-text:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .preview-container {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: white;
+            min-height: 400px;
+            overflow: auto;
+        }
+
+        #preview {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        /* GitHub Flavored Markdown Styles */
+        #preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        #preview h1 {
+            font-size: 2em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+
+        #preview h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+
+        #preview h3 { font-size: 1.25em; }
+        #preview h4 { font-size: 1em; }
+        #preview h5 { font-size: 0.875em; }
+        #preview h6 { font-size: 0.85em; color: #6a737d; }
+
+        #preview p {
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        #preview code {
+            background-color: rgba(27,31,35,0.05);
+            border-radius: 3px;
+            font-size: 85%;
+            margin: 0;
+            padding: 0.2em 0.4em;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        #preview pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            font-size: 85%;
+            line-height: 1.45;
+            overflow: auto;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        #preview pre code {
+            background-color: transparent;
+            border: 0;
+            display: inline;
+            line-height: inherit;
+            margin: 0;
+            overflow: visible;
+            padding: 0;
+            word-wrap: normal;
+        }
+
+        #preview blockquote {
+            border-left: 0.25em solid #dfe2e5;
+            color: #6a737d;
+            padding: 0 1em;
+            margin: 0 0 16px 0;
+        }
+
+        #preview ul, #preview ol {
+            padding-left: 2em;
+            margin-bottom: 16px;
+        }
+
+        #preview li {
+            margin-top: 0.25em;
+        }
+
+        #preview table {
+            border-collapse: collapse;
+            border-spacing: 0;
+            margin-bottom: 16px;
+            width: 100%;
+        }
+
+        #preview table th, #preview table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+
+        #preview table th {
+            background-color: #f6f8fa;
+            font-weight: 600;
+        }
+
+        #preview table tr {
+            background-color: #fff;
+            border-top: 1px solid #c6cbd1;
+        }
+
+        #preview table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+
+        #preview a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+
+        #preview a:hover {
+            text-decoration: underline;
+        }
+
+        #preview hr {
+            height: 0.25em;
+            padding: 0;
+            margin: 24px 0;
+            background-color: #e1e4e8;
+            border: 0;
+        }
+
+        #preview img {
+            max-width: 100%;
+            box-sizing: content-box;
+        }
+
+        #preview input[type="checkbox"] {
+            margin-right: 0.5em;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+        }
+
+        #render-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        #render-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        #copy-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        #copy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        #copy-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 Text to Image</h1>
+            <p>GitHub Flavored Markdown をレンダリングして画像をクリップボードにコピー</p>
+        </div>
+        
+        <div class="content">
+            <div class="panel">
+                <h2>入力 (Markdown)</h2>
+                <textarea id="input-text" placeholder="ここにMarkdownテキストを入力してください...
+
+例:
+# タイトル
+## サブタイトル
+
+- リスト項目1
+- リスト項目2
+
+**太字** と *斜体*
+
+```javascript
+console.log('Hello World!');
+```
+
+マルチバイト文字にも対応しています！
+日本語、中文、한글"></textarea>
+                <div class="button-group">
+                    <button id="render-btn">🎨 レンダリング</button>
+                    <button id="copy-btn" disabled>📋 画像をコピー</button>
+                </div>
+                <div id="status" class="status"></div>
+            </div>
+            
+            <div class="panel">
+                <h2>プレビュー</h2>
+                <div class="preview-container">
+                    <div id="preview">
+                        <p>左側のテキストエリアにMarkdownを入力して、「レンダリング」ボタンをクリックしてください。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Marked.js for Markdown parsing with GFM support -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <!-- html2canvas for converting HTML to image -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+    <script>
+        // Configure marked.js for GitHub Flavored Markdown
+        marked.setOptions({
+            gfm: true,
+            breaks: true,
+            tables: true,
+            sanitize: false,
+            smartLists: true,
+            smartypants: false
+        });
+
+        const inputText = document.getElementById('input-text');
+        const previewDiv = document.getElementById('preview');
+        const renderBtn = document.getElementById('render-btn');
+        const copyBtn = document.getElementById('copy-btn');
+        const statusDiv = document.getElementById('status');
+
+        let renderedCanvas = null;
+
+        // Show status message
+        function showStatus(message, isSuccess = true) {
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + (isSuccess ? 'success' : 'error');
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // Render markdown
+        function renderMarkdown() {
+            const text = inputText.value.trim();
+            
+            if (!text) {
+                previewDiv.innerHTML = '<p style="color: #999;">入力がありません</p>';
+                copyBtn.disabled = true;
+                return;
+            }
+
+            try {
+                // Parse markdown to HTML
+                const html = marked.parse(text);
+                previewDiv.innerHTML = html;
+                
+                // Generate canvas
+                generateCanvas();
+                
+                showStatus('✅ レンダリングが完了しました！', true);
+            } catch (error) {
+                console.error('Rendering error:', error);
+                showStatus('❌ レンダリングエラー: ' + error.message, false);
+            }
+        }
+
+        // Generate canvas from preview
+        async function generateCanvas() {
+            try {
+                copyBtn.disabled = true;
+                copyBtn.textContent = '🔄 画像を生成中...';
+                
+                const canvas = await html2canvas(previewDiv, {
+                    backgroundColor: '#ffffff',
+                    scale: 2, // Higher quality
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: true
+                });
+                
+                renderedCanvas = canvas;
+                copyBtn.disabled = false;
+                copyBtn.textContent = '📋 画像をコピー';
+            } catch (error) {
+                console.error('Canvas generation error:', error);
+                showStatus('❌ 画像生成エラー: ' + error.message, false);
+                copyBtn.textContent = '📋 画像をコピー';
+            }
+        }
+
+        // Copy canvas to clipboard
+        async function copyToClipboard() {
+            if (!renderedCanvas) {
+                showStatus('❌ 先にレンダリングを実行してください', false);
+                return;
+            }
+
+            try {
+                copyBtn.disabled = true;
+                copyBtn.textContent = '📋 コピー中...';
+
+                // Convert canvas to blob
+                renderedCanvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        throw new Error('画像の生成に失敗しました');
+                    }
+
+                    try {
+                        // Copy to clipboard using Clipboard API
+                        await navigator.clipboard.write([
+                            new ClipboardItem({
+                                'image/png': blob
+                            })
+                        ]);
+                        
+                        showStatus('✅ 画像をクリップボードにコピーしました！', true);
+                    } catch (err) {
+                        console.error('Clipboard API error:', err);
+                        
+                        // Fallback: download image if clipboard API fails
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'rendered-markdown.png';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        
+                        showStatus('⚠️ クリップボードへのコピーに失敗しました。画像をダウンロードしました。', false);
+                    } finally {
+                        copyBtn.disabled = false;
+                        copyBtn.textContent = '📋 画像をコピー';
+                    }
+                }, 'image/png');
+            } catch (error) {
+                console.error('Copy error:', error);
+                showStatus('❌ コピーエラー: ' + error.message, false);
+                copyBtn.disabled = false;
+                copyBtn.textContent = '📋 画像をコピー';
+            }
+        }
+
+        // Event listeners
+        renderBtn.addEventListener('click', renderMarkdown);
+        copyBtn.addEventListener('click', copyToClipboard);
+
+        // Auto-render on Enter key (Ctrl/Cmd + Enter)
+        inputText.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                renderMarkdown();
+            }
+        });
+    </script>
+</body>
+</html>
