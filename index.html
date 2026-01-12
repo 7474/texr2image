@@ -619,6 +619,8 @@ console.log('Hello World!');
                                 // Reset any transforms that might interfere with rendering
                                 clonedPreview.style.transform = 'none';
                                 clonedPreview.style.transformOrigin = '';
+                            } else {
+                                console.warn('Warning: offscreen-preview element not found in cloned document');
                             }
                         }
                     });
