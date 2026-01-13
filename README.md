@@ -1,5 +1,7 @@
 # text2image
 
+[![CI](https://github.com/7474/text2image/workflows/CI/badge.svg)](https://github.com/7474/text2image/actions)
+
 任意のテキストを入力し、GitHub Flavored Markdown として画像にレンダリングして、クリップボードに転送する Web ページです。
 
 ## 機能
@@ -50,7 +52,30 @@ GitHub Flavored Markdown の主要な機能をサポート:
 - **Marked.js**: GitHub Flavored Markdown パーサー
 - **html2canvas**: HTML を Canvas に変換
 - **Clipboard API**: クリップボードへの画像コピー
+- **Jest**: ユニットテストフレームワーク
 - 完全にクライアントサイドで動作、外部サーバー不要
+
+## 開発
+
+### テスト実行
+
+```bash
+# 依存関係のインストール
+npm install
+
+# テストの実行
+npm test
+
+# カバレッジ付きでテスト
+npm run test:coverage
+
+# ウォッチモードでテスト
+npm run test:watch
+```
+
+### CI/CD
+
+GitHub Actions を使用した継続的インテグレーション（CI）を実装しています。プルリクエストやプッシュ時に自動的にテストが実行されます。
 
 ## ライセンス
 
