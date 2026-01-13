@@ -540,7 +540,7 @@ console.log('Hello World!');
             // due to flanking delimiter rules. Convert directly to <strong> HTML tags to bypass parsing.
             // Pattern: **<CJK-punct>content<CJK-punct>** where content doesn't contain * or newlines
             // CJK ranges: \u3000-\u303F (Symbols and Punctuation), \uFF00-\uFFEF (Fullwidth Forms)
-            text = text.replace(/\*\*([\u3000-\u303F\uFF00-\uFFEF][^\*]*?[\u3000-\u303F\uFF00-\uFFEF])\*\*/g, '<strong>$1</strong>');
+            text = text.replace(/\*\*([\u3000-\u303F\uFF00-\uFFEF][^\*\n]*[\u3000-\u303F\uFF00-\uFFEF])\*\*/g, '<strong>$1</strong>');
             
             return text;
         }
